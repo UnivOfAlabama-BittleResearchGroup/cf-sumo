@@ -1,1 +1,5 @@
 traci
+pandas
+numpy
+plotly
+nbformat
