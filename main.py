@@ -48,7 +48,7 @@ def add_vehicle(name, start_speed):
 
 
 def input_data(leader_file):
-    leader_df = pd.read_csv(ROOT / "data" / "test.csv")
+    leader_df = pd.read_csv(leader_file)
     leader_dict = leader_df.to_dict("records")
     return leader_dict
 
@@ -87,5 +87,5 @@ if __name__ == "__main__":
     # this is the normal way of using traci. sumo is started as a
     # subprocess and then the python script connects and runs
     traci.start([sumoBinary, "-n", f"{ROOT / 'sumo-xml' / 'net.net.xml'}", "--step-length", f"{step}",
-                "--no-step-log", "true", "--fcd-output", f"{ROOT / 'sumo-xml' / 'output' / 'fcd.xml'}"])
+                "--no-step-log", "true", "--fcd-output", f"{ROOT / 'sumo-xml' / 'output' / 'fcd.xml'}", "--fcd-output.acceleration"])
     run(step, delay, input_data(leader_file))
