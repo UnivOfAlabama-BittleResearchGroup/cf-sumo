@@ -25,9 +25,11 @@ def get_options():
     return options
 
 
-def add_vehicle(name, start_speed):
+def add_vehicle(name, start_speed, drive_mode, tau):
     traci.vehicle.add(name, "trip", departSpeed=start_speed)
-    traci.vehicle.setSpeedMode(name, 32)
+    traci.vehicle.setSpeedMode(name, drive_mode)
+    #traci.vehicle.setActionStepLength(name, 1)
+    traci.vehicle.setTau(name, 0.5)
 
 # def run(step, delay):
 #     """execute the TraCI control loop"""
@@ -53,16 +55,16 @@ def input_data(leader_file):
     return leader_dict
 
 
-def run(step, delay, leader_dict):
+def run(step, delay, leader_dict, drive_mode, tau):
     """execute the TraCI control loop"""  # dataframe version
     add_flag = False
     symtime = 0
     start_speed = leader_dict[0]['velocity']
     traci.route.add("trip", ["E2", "E2"])
-    add_vehicle("follower" if symtime > 0 else "leader", start_speed)
+    add_vehicle("follower" if symtime > 0 else "leader", start_speed, drive_mode if symtime > 0 else 32, tau)
     for row in leader_dict:
         if (symtime >= delay) and not add_flag:
-            add_vehicle("follower" if symtime > 0 else "leader", start_speed)
+            add_vehicle("follower" if symtime > 0 else "leader", start_speed, drive_mode if symtime > 0 else 32, tau)
             add_flag = True
         traci.vehicle.setSpeed("leader", row['velocity'])
         traci.simulationStep()
@@ -70,22 +72,32 @@ def run(step, delay, leader_dict):
     traci.close()
     sys.stdout.flush()
 
+# DRIVE MODES
+# default (all checks on) -> [0 1 1 1 1 1] -> Speed Mode = 31
+default = 31
+no_checks = 32
 
-if __name__ == "__main__":
-    options = get_options()
-    step = 0.1
-    delay = 3  # seconds
-    leader_file = ROOT / "data" / "test.csv"
+# PARAMETERS
+step = 0.1 # SECONDS
+delay = 3  # seconds
+leader_file = ROOT / "data" / "test.csv"
+drive_mode = no_checks
+tau = 0.5 # reaction time / time headway (seconds)
 
-    # this script has been called from the command line. It will start sumo as a
-    # server, then connect and run
-    if options.nogui:
-        sumoBinary = checkBinary('sumo')
-    else:
-        sumoBinary = checkBinary('sumo-gui')
+def sumo_sim(step, delay, leader_file, drive_mode, tau):
+    if __name__ == "__main__":
+        options = get_options()
+        # this script has been called from the command line. It will start sumo as a
+        # server, then connect and run
+        if options.nogui:
+            sumoBinary = checkBinary('sumo')
+        else:
+            sumoBinary = checkBinary('sumo')
 
-    # this is the normal way of using traci. sumo is started as a
-    # subprocess and then the python script connects and runs
-    traci.start([sumoBinary, "-n", f"{ROOT / 'sumo-xml' / 'net.net.xml'}", "--step-length", f"{step}",
-                "--no-step-log", "true", "--fcd-output", f"{ROOT / 'sumo-xml' / 'output' / 'fcd.xml'}", "--fcd-output.acceleration"])
-    run(step, delay, input_data(leader_file))
+        # this is the normal way of using traci. sumo is started as a
+        # subprocess and then the python script connects and runs
+        traci.start([sumoBinary, "-n", f"{ROOT / 'sumo-xml' / 'net.net.xml'}", "--step-length", f"{step}",
+                    "--no-step-log", "true", "--fcd-output", f"{ROOT / 'sumo-xml' / 'output' / f'fcd{drive_mode}_{tau}.xml'}", "--fcd-output.acceleration"])
+        run(step, delay, input_data(leader_file), drive_mode, tau)
+
+sumo_sim(step, delay, leader_file, drive_mode, tau)
