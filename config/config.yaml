@@ -1,0 +1,16 @@
+Config:
+  leader_file: ${oc.env:ROOT}/data/test.csv
+  run_id:
+  output_path: 
+  sumo_gui: False
+
+CFParameters:
+  tau: 0.5 # reaction time / time headway (seconds)
+  acceleration: 0.1
+  deceleration: 0.25
+  speedFactor: .1 # 0.1 default
+
+SUMOParameters:
+  step: 0.1 # SECONDS
+  delay: 3  # seconds
+  

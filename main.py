@@ -1,11 +1,15 @@
+from dataclasses import dataclass
 import os
 import sys
 from pathlib import Path
 import optparse
 import random
 import pandas as pd
+import yaml
+from omegaconf import OmegaConf
 
 ROOT = Path(__file__).parent
+os.environ['ROOT'] = str(ROOT)
 
 if 'SUMO_HOME' in os.environ:
     tools = os.path.join(os.environ['SUMO_HOME'], 'tools')
@@ -16,6 +20,39 @@ else:
 from sumolib import checkBinary  # noqa
 import traci  # noqa
 
+cf_param_functions = {
+    "acceleration": lambda traci_, vehID, accel: traci_.vehicle.setAccel(vehID, accel),
+    "tau": lambda traci_, vehID, tau: traci_.vehicle.setTau(vehID, tau),
+    "speedFactor": lambda traci_, vehID, speedFactor: traci_.vehicle.setSpeedFactor(vehID, speedFactor),
+    "deceleration": lambda traci_, vehID, decel: traci_.vehicle.setDecel(vehID, decel),
+}
+
+@dataclass
+class CFParameters:
+    acceleration: float
+    tau: float
+    speedFactor: float
+    deceleration: float
+    speedFactor: float
+
+@dataclass
+class Config:
+    leader_file: str
+    run_id: int
+    output_path: str
+    sumo_gui: bool
+
+@dataclass
+class SUMOParameters:
+    step: float
+    delay: float
+
+@dataclass
+class YAMLConfig:
+    Config: Config
+    CFParameters: CFParameters
+    SUMOParameters: SUMOParameters
+
 
 def get_options():
     optParser = optparse.OptionParser()
@@ -25,11 +62,11 @@ def get_options():
     return options
 
 
-def add_vehicle(name, start_speed, drive_mode, tau):
+def add_vehicle(name, start_speed, cf_parameters):
     traci.vehicle.add(name, "trip", departSpeed=start_speed)
-    traci.vehicle.setSpeedMode(name, drive_mode)
     #traci.vehicle.setActionStepLength(name, 1)
-    traci.vehicle.setTau(name, 0.5)
+    for param, value in cf_parameters.items():
+        cf_param_functions[param](traci, name, value)
 
 # def run(step, delay):
 #     """execute the TraCI control loop"""
@@ -55,16 +92,16 @@ def input_data(leader_file):
     return leader_dict
 
 
-def run(step, delay, leader_dict, drive_mode, tau):
+def run(step, delay, leader_dict, cf_parameters):
     """execute the TraCI control loop"""  # dataframe version
     add_flag = False
     symtime = 0
     start_speed = leader_dict[0]['velocity']
     traci.route.add("trip", ["E2", "E2"])
-    add_vehicle("follower" if symtime > 0 else "leader", start_speed, drive_mode if symtime > 0 else 32, tau)
+    add_vehicle("follower" if symtime > 0 else "leader", start_speed, cf_parameters)
     for row in leader_dict:
         if (symtime >= delay) and not add_flag:
-            add_vehicle("follower" if symtime > 0 else "leader", start_speed, drive_mode if symtime > 0 else 32, tau)
+            add_vehicle("follower" if symtime > 0 else "leader", start_speed, cf_parameters)
             add_flag = True
         traci.vehicle.setSpeed("leader", row['velocity'])
         traci.simulationStep()
@@ -72,32 +109,23 @@ def run(step, delay, leader_dict, drive_mode, tau):
     traci.close()
     sys.stdout.flush()
 
-# DRIVE MODES
-# default (all checks on) -> [0 1 1 1 1 1] -> Speed Mode = 31
-default = 31
-no_checks = 32
+config = OmegaConf.load(ROOT / "config" / "config.yaml")
 
-# PARAMETERS
-step = 0.1 # SECONDS
-delay = 3  # seconds
-leader_file = ROOT / "data" / "test.csv"
-drive_mode = no_checks
-tau = 0.5 # reaction time / time headway (seconds)
-
-def sumo_sim(step, delay, leader_file, drive_mode, tau):
+def sumo_sim(config: YAMLConfig):
     if __name__ == "__main__":
         options = get_options()
         # this script has been called from the command line. It will start sumo as a
         # server, then connect and run
-        if options.nogui:
-            sumoBinary = checkBinary('sumo')
+        if config.Config.sumo_gui:
+            sumoBinary = checkBinary('sumo-gui')
         else:
             sumoBinary = checkBinary('sumo')
 
         # this is the normal way of using traci. sumo is started as a
         # subprocess and then the python script connects and runs
-        traci.start([sumoBinary, "-n", f"{ROOT / 'sumo-xml' / 'net.net.xml'}", "--step-length", f"{step}",
-                    "--no-step-log", "true", "--fcd-output", f"{ROOT / 'sumo-xml' / 'output' / f'fcd{drive_mode}_{tau}.xml'}", "--fcd-output.acceleration"])
-        run(step, delay, input_data(leader_file), drive_mode, tau)
+        traci.start([sumoBinary, "-n", f"{ROOT / 'sumo-xml' / 'net.net.xml'}", "--step-length", f"{config.SUMOParameters.step}",
+                    "--no-step-log", "true", "--fcd-output", f"{ROOT / 'sumo-xml' / 'output' / f'fcd.xml'}", "--fcd-output.acceleration"])
+        run(config.SUMOParameters.step, config.SUMOParameters.delay, input_data(config.Config.leader_file), config.CFParameters)
+        print("Simulation finished")
 
-sumo_sim(step, delay, leader_file, drive_mode, tau)
+sumo_sim(config)
