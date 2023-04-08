@@ -7,7 +7,7 @@ CFParameters:
   tau: 1
   acceleration: 2.6
   deceleration: 4.5
-  speedFactor: 0.1
+  speedFactor: 1
   SpeedMode: 31
 SUMOParameters:
   step: 0.1

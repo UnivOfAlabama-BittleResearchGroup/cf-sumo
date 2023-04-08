@@ -88,11 +88,9 @@ def config_create(run_id, cf_parameters):
     copy_path = f'{output_file_path}/{config_copy}'
     with open(copy_path, 'w') as yaml_file:
         yaml.dump(config_data, yaml_file, default_flow_style=False, sort_keys=False)
-    
-    with open(config_file_path, 'w') as yaml_file:
-        yaml.dump(config_data, yaml_file, default_flow_style=False, sort_keys=False)
 
     print(f"Config # '{run_id}' created successfully!")
+    return OmegaConf.create(config_data)
 
 
 def get_options():
@@ -166,20 +164,22 @@ def sumo_sim(run_id, config: YAMLConfig):
         run(config.SUMOParameters.step, config.SUMOParameters.delay, input_data(config.Config.leader_file), config.CFParameters)
         print("Simulation finished")
 
-def main(config: YAMLConfig):
-    tau = [0.8, 0.9, 1.0, 1.1, 1.2, 1.3]
-    acceleration = [2.0, 2.6, 3.2]
-    deceleration = [4.0, 4.5, 5.0]
-    speed_factor = [0.07, 0.1, 0.13]
+def main():
+    tau = [0.25, 0.5, 1.0, 1.5, 1.75]
+    acceleration = [1.2, 2.4, 2.6, 2.8, 3.0, 3.6, 4.0]
+    deceleration = [2.5, 3.0, 4.5, 5.0, 6.0]
+    speed_factor = [0.6, 0.8, 1, 1.2, 1.4]
     all_combinations = list(itertools.product(tau, acceleration, deceleration, speed_factor))
     run_ids = len(all_combinations)
     for run_id in range(run_ids):
-        config_create(run_id, all_combinations[run_id])
+        config = config_create(run_id, all_combinations[run_id])
         sumo_sim(run_id, config)
     
     return run_ids
 
 if __name__ == "__main__":
+    sumo_sim('d', config) # for rerunning default config
     start_time = time.time()
-    run_ids = main(config)
-    print(f"{run_ids} simulations finished --- %s seconds ---" % (time.time() - start_time))
+    #run_ids = main()
+    #print(f"{run_ids} simulations finished --- %s seconds ---" % (time.time() - start_time))
+

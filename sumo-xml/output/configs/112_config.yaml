@@ -4,11 +4,14 @@ Config:
   output_path: ${oc.env:ROOT}/sumo-xml/output
   sumo_gui: false
 CFParameters:
-  tau: 1.2
-  acceleration: 2.0
+  tau: 0.25
+  acceleration: 3.0
   deceleration: 4.5
-  speedFactor: 0.1
+  speedFactor: 1
   SpeedMode: 31
+  rmsn: 0.031932082653747695
+  rmspe: 0.038673616871711024
+  mpe: 0.031005210551364418
 SUMOParameters:
   step: 0.1
   delay: 3

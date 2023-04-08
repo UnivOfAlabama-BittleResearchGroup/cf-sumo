@@ -1,0 +1,16 @@
+Config:
+  leader_file: ${oc.env:ROOT}/data/test.csv
+  run_id: 700
+  output_path: ${oc.env:ROOT}/sumo-xml/output
+  sumo_gui: false
+CFParameters:
+  tau: 1.75
+  acceleration: 1.2
+  deceleration: 2.5
+  speedFactor: 0.6
+  SpeedMode: 31
+  rmsn: 0.2355614718294066
+  rmspe: 0.22291809771033214
+SUMOParameters:
+  step: 0.1
+  delay: 3
