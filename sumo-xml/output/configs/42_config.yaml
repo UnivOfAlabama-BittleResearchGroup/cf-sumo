@@ -11,6 +11,7 @@ CFParameters:
   SpeedMode: 31
   rmsn: 0.02880675581996453
   rmspe: 0.02975129085181749
+  mpe: 0.019664710578385636
 SUMOParameters:
   step: 0.1
   delay: 3
