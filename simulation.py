@@ -29,7 +29,7 @@ cf_param_functions = {
     "tau": lambda traci_, vehID, tau: traci_.vehicle.setTau(vehID, tau),
     "speedFactor": lambda traci_, vehID, speedFactor: traci_.vehicle.setSpeedFactor(vehID, speedFactor),
     "deceleration": lambda traci_, vehID, decel: traci_.vehicle.setDecel(vehID, decel),
-    "SpeedMode": lambda traci_, vehID, SpeedMode: traci_.vehicle.setSpeedMode(vehID, SpeedMode if vehID == "leader" else 31),
+    "SpeedMode": lambda traci_, vehID, SpeedMode: traci_.vehicle.setSpeedMode(vehID, 32 if vehID == "leader" else 31),
 }
 
 @dataclass
@@ -181,6 +181,5 @@ if __name__ == "__main__":
     #sumo_sim('d', config) # for rerunning default config
     start_time = time.time()
     run_ids = main()
-    analysis()
     print(f"{run_ids} simulations finished --- %s seconds ---" % (time.time() - start_time))
 
