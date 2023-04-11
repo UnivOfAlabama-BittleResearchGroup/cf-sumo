@@ -42,4 +42,5 @@ def genetic_algorithm(population_size, num_generations, num_parents, param_range
         offspring = mutation(offspring, param_ranges, mutation_rate)
         population = parents + offspring
     best_individual = min(population, key=lambda ind: simulation_func(0, ind))
-    return best_individual
+    best_fitness = simulation_func(0, best_individual)
+    return best_individual, best_fitness

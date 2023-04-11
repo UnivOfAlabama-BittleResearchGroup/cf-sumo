@@ -253,7 +253,7 @@ def parameter_sim(run_counter, params):
     cf_parameters = [params['tau'], params['acceleration'], params['deceleration'], params['speedFactor']]
     config = config_create(run_id, cf_parameters)
     sim_df = sumo_sim(run_id, config)
-    error = error_metric(run_id, sim_df)
+    error = error_metric(run_id, sim_df) # pass config through here
     return error
 
 # def parameter_sim(run_counter, cf_parameters):
@@ -286,9 +286,10 @@ if __name__ == "__main__":
     population_size = 50
     num_generations = 100
     num_parents = 10
-    best_params = genetic_algorithm(population_size, num_generations, num_parents, param_ranges, lambda gen, ind: parameter_sim(run_counter, ind))
+    best_params, best_rmse = genetic_algorithm(population_size, num_generations, num_parents, param_ranges, lambda gen, ind: parameter_sim(run_counter, ind))
 
     print("Best parameters found by the genetic algorithm:", best_params)
+    print("RMSE for the best parameters:", best_rmse)
 
     # Run the simulation with the best parameters
     parameter_sim(run_counter, best_params)
