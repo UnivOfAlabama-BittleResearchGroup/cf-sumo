@@ -1,5 +1,8 @@
 import random
 import numpy as np
+from concurrent.futures import ThreadPoolExecutor
+import itertools
+
 
 def generate_initial_population(population_size, param_ranges):
     population = []
@@ -34,12 +37,17 @@ def mutation(offspring, param_ranges, mutation_rate):
 
 def genetic_algorithm(population_size, num_generations, num_parents, param_ranges, simulation_func, mutation_rate=0.1):
     population = generate_initial_population(population_size, param_ranges)
-    for generation in range(num_generations):
-        fitnesses = [simulation_func(generation, individual) for individual in population]
-        parents = selection(population, fitnesses, num_parents)
-        offspring_size = population_size - len(parents)
-        offspring = crossover(parents, offspring_size)
-        offspring = mutation(offspring, param_ranges, mutation_rate)
-        population = parents + offspring
-    best_individual = min(population, key=lambda ind: simulation_func(0, ind))
+    run_counter = {"count": 0}
+
+    with ThreadPoolExecutor() as executor:
+        for generation in range(num_generations):
+            fitnesses = list(executor.map(simulation_func, itertools.repeat(run_counter, population_size), population))
+            parents = selection(population, fitnesses, num_parents)
+            offspring_size = population_size - len(parents)
+            offspring = crossover(parents, offspring_size)
+            offspring = mutation(offspring, param_ranges, mutation_rate)
+            population = parents + offspring
+
+    best_individual = min(population, key=lambda ind: simulation_func(run_counter, ind))
     return best_individual
+

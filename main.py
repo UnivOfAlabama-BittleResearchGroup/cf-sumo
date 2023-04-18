@@ -286,7 +286,7 @@ if __name__ == "__main__":
     population_size = 50
     num_generations = 100
     num_parents = 10
-    best_params = genetic_algorithm(population_size, num_generations, num_parents, param_ranges, lambda gen, ind: parameter_sim(run_counter, ind))
+    best_params = genetic_algorithm(population_size, num_generations, num_parents, param_ranges, parameter_sim)
 
     print("Best parameters found by the genetic algorithm:", best_params)
 
