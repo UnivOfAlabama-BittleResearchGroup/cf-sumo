@@ -121,7 +121,7 @@ class Runner(Trainable):
         add_flag = False
         start_speed = self._rw_array[0] # TODO follower and leader start speed
         self._traci.route.add("trip", ["E2", "E2"])
-        self._add_vehicle("leader", start_speed, {'speedMode': 32}})
+        self._add_vehicle("leader", start_speed, {'speedMode': 32})
 
         
         start_time = self._traci.simulation.getCurrentTime() / 1000

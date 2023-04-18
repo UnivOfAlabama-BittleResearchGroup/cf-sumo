@@ -21,8 +21,4 @@ SUMOParameters:
     - "${SUMOParameters.step}"
     - "--no-step-log"
     - "true"
-    - "--fcd-output"
-    - "{$Config.fcd_output}"
-    - "fcd-output.acceleration"
-
 
