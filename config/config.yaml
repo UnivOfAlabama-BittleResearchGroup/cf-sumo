@@ -1,14 +1,28 @@
 Config:
   leader_file: ${oc.env:ROOT}/data/test.csv
-  run_id: def
+  run_id: 
   output_path: ${oc.env:ROOT}/sumo-xml/output
   sumo_gui: false
-CFParameters:
+  fcd_output: "${oc.env:ROOT}/sumo-xml/output/{$Config.run_id}_fcd.xml"
+
+CFParameters: 
   tau: 1
   acceleration: 2.6
   deceleration: 4.5
   speedFactor: 1
   SpeedMode: 31
+
 SUMOParameters:
   step: 0.1
-  delay: 3
+  cmd_line:
+    - "-n"
+    - "${oc.env:ROOT}/sumo-xml/net.net.xml"
+    - "--step-length"
+    - "${SUMOParameters.step}"
+    - "--no-step-log"
+    - "true"
+    - "--fcd-output"
+    - "{$Config.fcd_output}"
+    - "fcd-output.acceleration"
+
+

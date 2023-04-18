@@ -8,3 +8,4 @@ omegaconf
 matplotlib
 sumolib
 scikit-learn
+black
