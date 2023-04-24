@@ -1,5 +1,6 @@
 import os
 from pathlib import Path
+from ray import tune
 from ray.tune import (
     run_experiments,
     grid_search,
@@ -24,7 +25,7 @@ r = Runner(config={'OurConfig': config})
 r.setup({
     'acceleration': 1.0,
     'deceleration': 1.0,
-    'tau': '1.0',
+    'tau': 1.0,
 })
 
 # run the simulation
@@ -33,6 +34,7 @@ r.setup({
 # save config file
 # return error as a float
 err = r.step()
+print(err)
 
 
 # SUMO should not close during this step
@@ -41,3 +43,12 @@ r.setup({
 })
 
 # TODO: RAY TUNE
+search_space = {
+    "acceleration": tune.grid_search([0.001, 0.01, 0.1, 1.0]),
+    "deceleration": tune.choice([1, 2, 3]),
+    "tau": tune.uniform(0.1, 1.0),
+}
+
+tuner = tune.Tuner(err, param_space=search_space)
+results = tuner.fit()
+print(results.get_best_result(metric="error", mode="min").config)
