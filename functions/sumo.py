@@ -132,31 +132,32 @@ class Runner(Trainable):
         
         start_time = self._traci.simulation.getTime()
         
-        speed_list = []
+        pos_list = []
 
         for row in self._rw_array:
             if ((self._sim_time - start_time) >= self._follower_offset) and not add_flag:
                 self._add_vehicle(
                     "follower", start_speed, self._cf_parameters
                 )
-                traci.vehicle.subscribe("follower", (tc.VAR_SPEED, tc.VAR_POSITION))
-                traci.vehicle.subscribe("leader", (tc.VAR_SPEED, tc.VAR_POSITION))
+                traci.vehicle.subscribe("follower", (tc.VAR_SPEED, tc.VAR_LANEPOSITION))
+                traci.vehicle.subscribe("leader", (tc.VAR_SPEED, tc.VAR_LANEPOSITION))
 
                 add_flag = True
             traci.vehicle.setSpeed("leader", row[0])
             traci.simulationStep()
             # get subscription results
-            speeds = traci.vehicle.getAllSubscriptionResults()
+            positions = traci.vehicle.getAllSubscriptionResults()
             if not add_flag:
                 self._sim_time += self._sim_step
             else:
-                speed_list.append([
-                    speeds["follower"][tc.VAR_POSITION],
-                    speeds["leader"][tc.VAR_POSITION],
+                pos_list.append([
+                    positions["follower"][tc.VAR_LANEPOSITION],
+                    positions["leader"][tc.VAR_LANEPOSITION],
                 ])
                 self._sim_time += self._sim_step
+                print(pos_list[-1])
 
-        return speed_list
+        return pos_list
 
     def _add_vehicle(self, name: str, start_speed: float, cf_parameters: dict):
         self._traci.vehicle.add(name, "trip", departSpeed=start_speed)
