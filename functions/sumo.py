@@ -52,6 +52,8 @@ class Runner(Trainable):
         self._sim_time = 0
         self._sim_step = self._config.SUMOParameters.step
 
+        self._step_counter = 0
+
         self._cf_parameters: dict = None
 
         self._rw_df: pd.DataFrame = pd.read_csv(self._config.Config.leader_file,) # real world file
@@ -85,9 +87,14 @@ class Runner(Trainable):
         run_config = deepcopy(self._config)
 
         speed_list = self.run()
-        # TODO: use speed list to calculate error - this might be done
-        error_metrics(speed_list, self._config, self._rw_array)
-        return super().step()
+
+        error_metrics(speed_list, run_config, self._rw_array)
+
+        #TODO: save run_config to file. How do we name the file?
+        
+    
+        self._step_counter += 1    
+        return run_config.Error.val
 
     def cleanup(self):
         # TODO: Add your cleanup code here
@@ -126,41 +133,47 @@ class Runner(Trainable):
     def run(self, ):
         add_flag = False
         start_speed = self._rw_array[0][0] # TODO follower and leader start speed
-        self._traci.route.add("trip", ["E2", "E2"])
-        self._add_vehicle("leader", start_speed, {'speedMode': 32})
+        
+        if 'trip' not in self._traci.route.getIDList():
+            self._traci.route.add("trip", ["E2", "E2"])
 
-        
+
+        leader_name = f"leader_{int(self._sim_time)}"
+        follower_name = f"follower_{int(self._sim_time)}"
+
+        self._add_vehicle(leader_name, start_speed, {'speedMode': 32})
+
+
         start_time = self._traci.simulation.getTime()
-        
+
         pos_list = []
 
         for row in self._rw_array:
             if ((self._sim_time - start_time) >= self._follower_offset) and not add_flag:
                 self._add_vehicle(
-                    "follower", start_speed, self._cf_parameters
+                    follower_name, start_speed, self._cf_parameters
                 )
-                traci.vehicle.subscribe("follower", (tc.VAR_SPEED, tc.VAR_LANEPOSITION))
-                traci.vehicle.subscribe("leader", (tc.VAR_SPEED, tc.VAR_LANEPOSITION))
+                traci.vehicle.subscribe(follower_name, (tc.VAR_SPEED, tc.VAR_DISTANCE))
+                traci.vehicle.subscribe(leader_name, (tc.VAR_SPEED, tc.VAR_DISTANCE))
 
                 add_flag = True
-            traci.vehicle.setSpeed("leader", row[0])
-            traci.simulationStep()
+            self._traci.vehicle.setSpeed(leader_name, row[0])
+            self._traci.simulationStep()
             # get subscription results
-            positions = traci.vehicle.getAllSubscriptionResults()
-            if not add_flag:
-                self._sim_time += self._sim_step
-            else:
+            positions = self._traci.vehicle.getAllSubscriptionResults()
+            if add_flag:
                 pos_list.append([
-                    positions["follower"][tc.VAR_LANEPOSITION],
-                    positions["leader"][tc.VAR_LANEPOSITION],
+                    positions[follower_name][tc.VAR_DISTANCE],
+                    positions[leader_name][tc.VAR_DISTANCE],
                 ])
-                self._sim_time += self._sim_step
                 print(pos_list[-1])
 
+            self._sim_time += self._sim_step
         return pos_list
 
     def _add_vehicle(self, name: str, start_speed: float, cf_parameters: dict):
         self._traci.vehicle.add(name, "trip", departSpeed=start_speed)
+        self._traci.vehicle.moveTo(name, "E2_0", 0, tc.MOVE_AUTOMATIC)
         for param, value in cf_parameters.items():
             cf_param_functions[param](self._traci, name, value)
 

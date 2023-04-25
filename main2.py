@@ -39,16 +39,27 @@ print(err)
 
 # SUMO should not close during this step
 r.setup({
-
+    'acceleration': 2.0,
+    'deceleration': 6.0,
+    'tau': .5,
 })
 
-# TODO: RAY TUNE
-search_space = {
-    "acceleration": tune.grid_search([0.001, 0.01, 0.1, 1.0]),
-    "deceleration": tune.choice([1, 2, 3]),
-    "tau": tune.uniform(0.1, 1.0),
-}
+err = r.step()
+print(err)
 
-tuner = tune.Tuner(err, param_space=search_space)
-results = tuner.fit()
-print(results.get_best_result(metric="error", mode="min").config)
+
+r.cleanup()
+
+
+
+
+# # TODO: RAY TUNE
+# search_space = {
+#     "acceleration": tune.grid_search([0.001, 0.01, 0.1, 1.0]),
+#     "deceleration": tune.choice([1, 2, 3]),
+#     "tau": tune.uniform(0.1, 1.0),
+# }
+
+# tuner = tune.Tuner(err, param_space=search_space)
+# results = tuner.fit()
+# print(results.get_best_result(metric="error", mode="min").config)

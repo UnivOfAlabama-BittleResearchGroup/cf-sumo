@@ -2,7 +2,7 @@ Config:
   leader_file: ${oc.env:ROOT}/data/test.csv
   run_id: 
   output_path: ${oc.env:ROOT}/sumo-xml/output
-  sumo_gui: false
+  sumo_gui: true
   fcd_output: "${oc.env:ROOT}/sumo-xml/output/{$Config.run_id}_fcd.xml"
 
 CFParameters: 
@@ -22,3 +22,8 @@ SUMOParameters:
     - "--no-step-log"
     - "true"
 
+Error:
+  val: ${Error.mpe}
+  mpe: "???"
+  rmsn: "???"
+  rmspe: "???"

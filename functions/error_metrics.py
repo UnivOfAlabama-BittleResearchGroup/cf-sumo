@@ -8,22 +8,21 @@ def error_metrics(
     pos_list: list, conf: OmegaConf, rw_array: np.ndarray
 ) -> OmegaConf:
     """Calculate error metrics and update config file."""
-
+    
+    
+    rw_array = rw_array[rw_array[:, 1] > 0]
     pos_list = np.array(pos_list)
+
+    assert rw_array.shape[0] == pos_list.shape[0], (
+        f"rw_array.shape[0] = {rw_array.shape[0]} != "
+        f"pos_list.shape[0] = {pos_list.shape[0]}"
+    )
+
     n = rw_array.shape[0]
 
-    # why two different pandas files here? Shouldn't we just use the sim_df? -> fixed
-    # actual_df = leader_df
-    # error_df = actual_df.copy()
-    # error_df = error_df.dropna()
-    # error_df = error_df.drop(
-    #     columns=["epoch_time", "leadvelocity", "leadposition", "leadacceleration"]
-    # )
-    # error_df = error_df.reset_index(drop=True)
-    # sim_df = sim_df.reset_index(drop=True)
-
+    #TODO check these functions
     for f in [rmsn, rmspe, mpe]:
-        conf.CFParameters[f.__name__] = float(f(pos_list, rw_array, n))
+        conf.Error[f.__name__] = float(f(pos_list, rw_array, n))
 
     return conf
 
