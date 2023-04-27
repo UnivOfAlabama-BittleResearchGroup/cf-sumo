@@ -2,8 +2,9 @@ Config:
   leader_file: ${oc.env:ROOT}/data/test.csv
   run_id: 
   output_path: ${oc.env:ROOT}/sumo-xml/output
-  sumo_gui: true
+  sumo_gui: false
   fcd_output: "${oc.env:ROOT}/sumo-xml/output/{$Config.run_id}_fcd.xml"
+  CFmodel: IDM
 
 CFParameters: 
   tau: 1

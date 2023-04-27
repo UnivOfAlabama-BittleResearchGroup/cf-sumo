@@ -1,0 +1,27 @@
+Config:
+  leader_file: ${oc.env:ROOT}/data/test.csv
+  run_id: null
+  output_path: ${oc.env:ROOT}/sumo-xml/output
+  sumo_gui: false
+  fcd_output: ${oc.env:ROOT}/sumo-xml/output/{$Config.run_id}_fcd.xml
+  CFmodel: IDM
+CFParameters:
+  acceleration: 2.0
+  deceleration: 6.0
+  tau: 0.5
+  speedFactor: 1
+  speedMode: 31
+SUMOParameters:
+  step: 0.1
+  cmd_line:
+  - -n
+  - ${oc.env:ROOT}/sumo-xml/net.net.xml
+  - --step-length
+  - ${SUMOParameters.step}
+  - --no-step-log
+  - 'true'
+Error:
+  val: ${Error.mpe}
+  mpe: 65.37761297046066
+  rmsn: 24.036402353910574
+  rmspe: 113.15005017628407

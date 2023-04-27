@@ -1,4 +1,7 @@
 from copy import deepcopy
+import os
+import tempfile
+from click import Path
 from ray.tune import Trainable
 from omegaconf import OmegaConf
 from sumolib import checkBinary
@@ -7,6 +10,8 @@ import traci.constants as tc
 from typing import Dict, Optional, Callable, Any
 import pandas as pd
 from logging import Logger
+
+import yaml
 
 
 from .error_metrics import error_metrics
@@ -24,9 +29,6 @@ cf_param_functions = {
         vehID, val
     ),
 }
-
-
-
 
 class Runner(Trainable):
 
@@ -69,6 +71,7 @@ class Runner(Trainable):
     def setup(self, config: Dict[str, float]):
         # TODO: Add your setup code here
         self._cf_parameters = config
+        self._config.CFParameters = config
 
         if self._sim_time > 1e6:
             self._sim_time = 0
@@ -79,7 +82,7 @@ class Runner(Trainable):
 
         return super().setup(config)
 
-    def step(self):
+    def step(self, ROOT: Path):
         # TODO: Add your training code here
         # this is where the simulation will run
         
@@ -90,8 +93,11 @@ class Runner(Trainable):
 
         error_metrics(speed_list, run_config, self._rw_array)
 
-        #TODO: save run_config to file. How do we name the file?
-        
+        #TODO: change the parameters in the config file
+        output_file_path = ROOT / "sumo-xml" / "output" / "configs" / f"config_{self.CONNECTION_NUM}_{self._step_counter}.yaml"
+
+        with tempfile.NamedTemporaryFile() as fp:
+            OmegaConf.save(config=run_config, f=output_file_path)
     
         self._step_counter += 1    
         return run_config.Error.val
@@ -105,7 +111,6 @@ class Runner(Trainable):
         self._traci.close()
         self._traci = None
         self._sim_time = 0
-
 
     def _start_sumo(self):
         # Start SUMO
@@ -137,7 +142,6 @@ class Runner(Trainable):
         if 'trip' not in self._traci.route.getIDList():
             self._traci.route.add("trip", ["E2", "E2"])
 
-
         leader_name = f"leader_{int(self._sim_time)}"
         follower_name = f"follower_{int(self._sim_time)}"
 
@@ -166,7 +170,7 @@ class Runner(Trainable):
                     positions[follower_name][tc.VAR_DISTANCE],
                     positions[leader_name][tc.VAR_DISTANCE],
                 ])
-                print(pos_list[-1])
+                #print(pos_list[-1])
 
             self._sim_time += self._sim_step
         return pos_list
@@ -176,5 +180,3 @@ class Runner(Trainable):
         self._traci.vehicle.moveTo(name, "E2_0", 0, tc.MOVE_AUTOMATIC)
         for param, value in cf_parameters.items():
             cf_param_functions[param](self._traci, name, value)
-
-

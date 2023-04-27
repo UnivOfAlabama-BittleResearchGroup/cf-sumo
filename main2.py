@@ -26,6 +26,8 @@ r.setup({
     'acceleration': 1.0,
     'deceleration': 1.0,
     'tau': 1.0,
+    'speedFactor': 1,
+    'speedMode': 31,
 })
 
 # run the simulation
@@ -33,8 +35,8 @@ r.setup({
 # write error to config file
 # save config file
 # return error as a float
-err = r.step()
-print(err)
+err = r.step(ROOT)
+print(f"mpe = {err}")
 
 
 # SUMO should not close during this step
@@ -42,10 +44,12 @@ r.setup({
     'acceleration': 2.0,
     'deceleration': 6.0,
     'tau': .5,
+    'speedFactor': 1,
+    'speedMode': 31,
 })
 
-err = r.step()
-print(err)
+err = r.step(ROOT)
+print(f"mpe = {err}")
 
 
 r.cleanup()

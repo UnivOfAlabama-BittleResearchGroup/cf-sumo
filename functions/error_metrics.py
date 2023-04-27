@@ -32,10 +32,7 @@ def rmsn(pos_list: np.ndarray, rw_array: np.ndarray, n) -> float:
     error_lead_pos = np.nan_to_num(rw_array[:, 0])  # lead pos array
     error_follow_pos = np.nan_to_num(rw_array[:, 1])  # follow pos array
     
-
     sim_follow_pos = pos_list[:, 0]  # follow pos
-    print("error_follow_pos shape:", error_follow_pos.shape)
-    print("sim_follow_pos shape:", sim_follow_pos.shape)
 
     pos_observed_sum = np.sum(error_lead_pos)
     rmsn_numerator = np.sqrt(n * np.sum(np.square(error_follow_pos - sim_follow_pos)))
