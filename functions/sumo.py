@@ -25,24 +25,23 @@ cf_param_functions = {
         vehID, speedFactor
     ),
     "deceleration": lambda traci_, vehID, decel: traci_.vehicle.setDecel(vehID, decel),
-    "speedMode": lambda traci_, vehID, val: traci_.vehicle.setSpeedMode(
-        vehID, val
-    ),
+    "speedMode": lambda traci_, vehID, val: traci_.vehicle.setSpeedMode(vehID, val),
 }
 
-class Runner(Trainable):
 
+class Runner(Trainable):
     CONNECTION_NUM = 0
 
-    def __init__(self, 
-                 config: dict,
-                 logger_creator: Callable[[Dict[str, Any]], Logger] = None,
-                 remote_checkpoint_dir: Optional[str] = None,
-                 sync_function_tpl: Optional[str] = None,
-                 **kwargs):
-
+    def __init__(
+        self,
+        config: dict,
+        logger_creator: Callable[[Dict[str, Any]], Logger] = None,
+        remote_checkpoint_dir: Optional[str] = None,
+        sync_function_tpl: Optional[str] = None,
+        **kwargs,
+    ):
         try:
-            self._config = config.pop('OurConfig')
+            self._config = config.pop("OurConfig")
             # if not instance of OmegaConf, then it is a dict, convert to OmegaConf
             if not isinstance(self._config, OmegaConf):
                 self._config = OmegaConf.load(self._config)
@@ -58,15 +57,25 @@ class Runner(Trainable):
 
         self._cf_parameters: dict = None
 
-        self._rw_df: pd.DataFrame = pd.read_csv(self._config.Config.leader_file,) # real world file
-        self._rw_array = self._rw_df[['leadvelocity', 'followvelocity']].to_numpy() # real world file
+        self._rw_df: pd.DataFrame = pd.read_csv(
+            self._config.Config.leader_file,
+        )  # real world file
+
+        self._rw_pos_array = self._rw_df[["leadposition", "followposition"]].to_numpy()
+
+        self._rw_speed_array = self._rw_df[
+            ["leadvelocity", "followvelocity"]
+        ].to_numpy()  # real world file
 
         # NEED to get time offset from config file
-        self._follower_offset = self._rw_df.loc[self._rw_df['followvelocity'].notna(), 'seconds'].iloc[0]
+        self._follower_offset = self._rw_df.loc[
+            self._rw_df["followvelocity"].notna(), "seconds"
+        ].iloc[0]
 
         # IMPORTANT: This probably shouldn't change
-        super().__init__(config, logger_creator, remote_checkpoint_dir, sync_function_tpl, **kwargs)
-
+        super().__init__(
+            config, logger_creator, remote_checkpoint_dir, sync_function_tpl, **kwargs
+        )
 
     def setup(self, config: Dict[str, float]):
         # TODO: Add your setup code here
@@ -78,36 +87,42 @@ class Runner(Trainable):
 
         if self._traci is None:
             self._start_sumo()
-        
 
         return super().setup(config)
 
     def step(self, ROOT: Path):
         # TODO: Add your training code here
         # this is where the simulation will run
-        
+
         # create a copy of the config file
         run_config = deepcopy(self._config)
 
         speed_list = self.run()
 
-        error_metrics(speed_list, run_config, self._rw_array)
+        error_metrics(speed_list, run_config, self._rw_pos_array)
 
-        #TODO: change the parameters in the config file
-        output_file_path = ROOT / "sumo-xml" / "output" / "configs" / f"config_{self.CONNECTION_NUM}_{self._step_counter}.yaml"
+        output_file_path = (
+            ROOT
+            / "sumo-xml"
+            / "output"
+            / "configs"
+            / f"config_{self.CONNECTION_NUM}_{self._step_counter}.yaml"
+        )
 
         with tempfile.NamedTemporaryFile() as fp:
             OmegaConf.save(config=run_config, f=output_file_path)
-    
-        self._step_counter += 1    
+
+        self._step_counter += 1
         return run_config.Error.val
 
     def cleanup(self):
         # TODO: Add your cleanup code here
         self._cleanup_traci()
         return super().cleanup()
-    
-    def _cleanup_traci(self, ):
+
+    def _cleanup_traci(
+        self,
+    ):
         self._traci.close()
         self._traci = None
         self._sim_time = 0
@@ -120,43 +135,39 @@ class Runner(Trainable):
             sumoBinary = checkBinary("sumo")
 
         traci.start(
-            [
-                sumoBinary,
-                *map(str, self._config.SUMOParameters.cmd_line)
-            ],
-            label=str(Runner.CONNECTION_NUM)
+            [sumoBinary, *map(str, self._config.SUMOParameters.cmd_line)],
+            label=str(Runner.CONNECTION_NUM),
         )
 
-        self._traci = traci.getConnection(
-            str(Runner.CONNECTION_NUM)
-        )
+        self._traci = traci.getConnection(str(Runner.CONNECTION_NUM))
 
         print(f"Starting SUMO with connection number {Runner.CONNECTION_NUM}")
 
         Runner.CONNECTION_NUM += 1
 
-    def run(self, ):
+    def run(
+        self,
+    ):
         add_flag = False
-        start_speed = self._rw_array[0][0] # TODO follower and leader start speed
-        
-        if 'trip' not in self._traci.route.getIDList():
+        start_speed = self._rw_speed_array[0][0]
+
+        if "trip" not in self._traci.route.getIDList():
             self._traci.route.add("trip", ["E2", "E2"])
 
         leader_name = f"leader_{int(self._sim_time)}"
         follower_name = f"follower_{int(self._sim_time)}"
 
-        self._add_vehicle(leader_name, start_speed, {'speedMode': 32})
-
+        self._add_vehicle(leader_name, start_speed, {"speedMode": 32})
 
         start_time = self._traci.simulation.getTime()
 
         pos_list = []
 
-        for row in self._rw_array:
-            if ((self._sim_time - start_time) >= self._follower_offset) and not add_flag:
-                self._add_vehicle(
-                    follower_name, start_speed, self._cf_parameters
-                )
+        for row in self._rw_speed_array:
+            if (
+                (self._sim_time - start_time) >= self._follower_offset
+            ) and not add_flag:
+                self._add_vehicle(follower_name, start_speed, self._cf_parameters)
                 traci.vehicle.subscribe(follower_name, (tc.VAR_SPEED, tc.VAR_DISTANCE))
                 traci.vehicle.subscribe(leader_name, (tc.VAR_SPEED, tc.VAR_DISTANCE))
 
@@ -166,11 +177,13 @@ class Runner(Trainable):
             # get subscription results
             positions = self._traci.vehicle.getAllSubscriptionResults()
             if add_flag:
-                pos_list.append([
-                    positions[follower_name][tc.VAR_DISTANCE],
-                    positions[leader_name][tc.VAR_DISTANCE],
-                ])
-                #print(pos_list[-1])
+                pos_list.append(
+                    [
+                        positions[follower_name][tc.VAR_DISTANCE],
+                        positions[leader_name][tc.VAR_DISTANCE],
+                    ]
+                )
+                # print(pos_list[-1])
 
             self._sim_time += self._sim_step
         return pos_list

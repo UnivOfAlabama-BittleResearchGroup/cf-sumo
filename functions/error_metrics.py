@@ -20,7 +20,6 @@ def error_metrics(
 
     n = rw_array.shape[0]
 
-    #TODO check these functions
     for f in [rmsn, rmspe, mpe]:
         conf.Error[f.__name__] = float(f(pos_list, rw_array, n))
 

@@ -24,7 +24,7 @@ SUMOParameters:
     - "true"
 
 Error:
-  val: ${Error.mpe}
+  val: ${Error.rmsn}
   mpe: "???"
   rmsn: "???"
   rmspe: "???"

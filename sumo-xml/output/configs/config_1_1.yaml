@@ -21,7 +21,7 @@ SUMOParameters:
   - --no-step-log
   - 'true'
 Error:
-  val: ${Error.mpe}
-  mpe: 65.37761297046066
-  rmsn: 24.036402353910574
-  rmspe: 113.15005017628407
+  val: ${Error.rmsn}
+  mpe: -0.03902925792293283
+  rmsn: 0.016519810642930115
+  rmspe: 0.10472018758496779
