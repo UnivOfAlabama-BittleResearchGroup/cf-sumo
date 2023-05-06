@@ -10,7 +10,6 @@ import traci.constants as tc
 from typing import Dict, Optional, Callable, Any
 import pandas as pd
 from logging import Logger
-
 import yaml
 
 
@@ -28,8 +27,16 @@ cf_param_functions = {
     "speedMode": lambda traci_, vehID, val: traci_.vehicle.setSpeedMode(vehID, val),
 }
 
+def add_vehicle(traci, name: str, start_speed: float, cf_parameters: dict):
+        traci.vehicle.add(name, "trip", departSpeed=start_speed)
+        traci.vehicle.moveTo(name, "E2_0", 0, tc.MOVE_AUTOMATIC)
+        for param, value in cf_parameters.items():
+            cf_param_functions[param](traci, name, value)
 
-class Runner(Trainable):
+def cleanup_traci(self):
+    traci.close()
+
+class Runner():
     CONNECTION_NUM = 0
 
     def __init__(
@@ -57,9 +64,7 @@ class Runner(Trainable):
 
         self._cf_parameters: dict = None
 
-        self._rw_df: pd.DataFrame = pd.read_csv(
-            self._config.Config.leader_file,
-        )  # real world file
+        self._rw_df: pd.DataFrame = pd.read_csv(self._config.Config.leader_file,)  # real world file
 
         self._rw_pos_array = self._rw_df[["leadposition", "followposition"]].to_numpy()
 
@@ -72,13 +77,12 @@ class Runner(Trainable):
             self._rw_df["followvelocity"].notna(), "seconds"
         ].iloc[0]
 
-        # IMPORTANT: This probably shouldn't change
-        super().__init__(
-            config, logger_creator, remote_checkpoint_dir, sync_function_tpl, **kwargs
-        )
+        # # IMPORTANT: This probably shouldn't change
+        # super().__init__(
+        #     config, logger_creator, remote_checkpoint_dir, sync_function_tpl, **kwargs
+        # )
 
     def setup(self, config: Dict[str, float]):
-        # TODO: Add your setup code here
         self._cf_parameters = config
         self._config.CFParameters = config
 
@@ -88,10 +92,7 @@ class Runner(Trainable):
         if self._traci is None:
             self._start_sumo()
 
-        return super().setup(config)
-
     def step(self, ROOT: Path):
-        # TODO: Add your training code here
         # this is where the simulation will run
 
         # create a copy of the config file
@@ -116,14 +117,7 @@ class Runner(Trainable):
         return run_config.Error.val
 
     def cleanup(self):
-        # TODO: Add your cleanup code here
-        self._cleanup_traci()
-        return super().cleanup()
-
-    def _cleanup_traci(
-        self,
-    ):
-        self._traci.close()
+        cleanup_traci(self._traci)
         self._traci = None
         self._sim_time = 0
 
@@ -145,9 +139,7 @@ class Runner(Trainable):
 
         Runner.CONNECTION_NUM += 1
 
-    def run(
-        self,
-    ):
+    def run(self):
         add_flag = False
         start_speed = self._rw_speed_array[0][0]
 
@@ -157,7 +149,8 @@ class Runner(Trainable):
         leader_name = f"leader_{int(self._sim_time)}"
         follower_name = f"follower_{int(self._sim_time)}"
 
-        self._add_vehicle(leader_name, start_speed, {"speedMode": 32})
+        # self._add_vehicle(leader_name, start_speed, {"speedMode": 32})
+        add_vehicle(self._traci, leader_name, start_speed, {"speedMode": 32})  # Updated line
 
         start_time = self._traci.simulation.getTime()
 
@@ -167,7 +160,8 @@ class Runner(Trainable):
             if (
                 (self._sim_time - start_time) >= self._follower_offset
             ) and not add_flag:
-                self._add_vehicle(follower_name, start_speed, self._cf_parameters)
+                # self._add_vehicle(follower_name, start_speed, self._cf_parameters)
+                add_vehicle(self._traci, follower_name, start_speed, self._cf_parameters)
                 traci.vehicle.subscribe(follower_name, (tc.VAR_SPEED, tc.VAR_DISTANCE))
                 traci.vehicle.subscribe(leader_name, (tc.VAR_SPEED, tc.VAR_DISTANCE))
 
@@ -187,9 +181,9 @@ class Runner(Trainable):
 
             self._sim_time += self._sim_step
         return pos_list
-
-    def _add_vehicle(self, name: str, start_speed: float, cf_parameters: dict):
-        self._traci.vehicle.add(name, "trip", departSpeed=start_speed)
-        self._traci.vehicle.moveTo(name, "E2_0", 0, tc.MOVE_AUTOMATIC)
-        for param, value in cf_parameters.items():
-            cf_param_functions[param](self._traci, name, value)
+    
+    # def _add_vehicle(self, name: str, start_speed: float, cf_parameters: dict):
+    #     self._traci.vehicle.add(name, "trip", departSpeed=start_speed)
+    #     self._traci.vehicle.moveTo(name, "E2_0", 0, tc.MOVE_AUTOMATIC)
+    #     for param, value in cf_parameters.items():
+    #         cf_param_functions[param](self._traci, name, value)

@@ -13,6 +13,8 @@ def error_metrics(
     rw_array = rw_array[rw_array[:, 1] > 0]
     pos_list = np.array(pos_list)
 
+    print(pos_list.shape[0])
+
     assert rw_array.shape[0] == pos_list.shape[0], (
         f"rw_array.shape[0] = {rw_array.shape[0]} != "
         f"pos_list.shape[0] = {pos_list.shape[0]}"
