@@ -6,9 +6,9 @@ Config:
   fcd_output: ${oc.env:ROOT}/sumo-xml/output/{$Config.run_id}_fcd.xml
   CFmodel: IDM
 CFParameters:
-  acceleration: 3.770752569941174
-  deceleration: 4.762616232544037
-  tau: 0.8679286541332939
+  acceleration: 2.5
+  deceleration: 4.8
+  tau: 1.2
   speedFactor: 1
   speedMode: 31
 SUMOParameters:
@@ -22,6 +22,6 @@ SUMOParameters:
   - 'true'
 Error:
   val: ${Error.rmsn}
-  mpe: -0.022928169841687922
-  rmsn: 0.01115196717207634
-  rmspe: 0.08489223866842315
+  mpe: -0.05168196840022129
+  rmsn: 0.024240965438199286
+  rmspe: 0.10051774854948098

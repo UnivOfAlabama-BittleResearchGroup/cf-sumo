@@ -1,6 +1,7 @@
 import os
 from pathlib import Path
 from ray import tune
+import ray
 from functions.sumo import Runner
 
 ROOT = Path(__file__).parent
@@ -9,6 +10,9 @@ os.environ["ROOT"] = str(ROOT)
 config = "./config/config.yaml"
 
 runner = Runner(config={"OurConfig": config})
+
+context = ray.init()
+# print(context.dashboard_url)
 
 def sumo_train(config):
     runner.setup(config)
@@ -19,9 +23,9 @@ def sumo_train(config):
     return {"error": score}
 
 search_space = {
-    "acceleration": tune.uniform(2.0,4.0),
-    "deceleration": tune.uniform(3.0,5.0),
-    "tau": tune.uniform(0.1, 2.0),
+    "acceleration": tune.grid_search([2.5,2.6,2.7]),
+    "deceleration": tune.grid_search([4.4,4.6,4.8]),
+    "tau": tune.grid_search([0.8, 1.0, 1.2]),
     "speedFactor": 1,
     "speedMode": 31
 }
